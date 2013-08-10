@@ -126,11 +126,11 @@ void printLevel( const Level & level ) {
 }
 
 int main(int argc, char* argv[]) {
-	clock_t start, stop;
-	start = clock();
-	int v = atoi(argv[1]);
-	printf("The random seed is: %d \n", v);
-	srand(v);
+    clock_t start, stop;
+    start = clock();
+    int v = atoi(argv[1]);
+    printf("The random seed is: %d \n", v);
+    srand(v);
 
     GenRandGenerator randGenerator;
     LevelGenerator<GenRandGenerator> levelGenerator( randGenerator, NUM_LEVS );
@@ -153,8 +153,8 @@ int main(int argc, char* argv[]) {
     Level & l( levelGenerator.pickLevelByCriteria( numRoomsMetric ) );
     printLevel( l );
 
-	stop = clock();
-	long clocks_per_ms = CLOCKS_PER_SEC/1000;
+    stop = clock();
+    long clocks_per_ms = CLOCKS_PER_SEC/1000;
     printf("%d\n", (stop - start)/clocks_per_ms);
     return 0;
 }
