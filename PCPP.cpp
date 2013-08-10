@@ -9,7 +9,7 @@ const uint32_t TILE_DIM = 50;
 const uint32_t MIW = 2;
 const uint32_t MAXWID = 8;
 const uint32_t NUM_LEVS = 800;
-const uint32_t NUM_THREADS = 4;
+const uint32_t NUM_THREADS = 2;
 const uint32_t NUM_LEVS_PER_THREAD = NUM_LEVS / NUM_THREADS;
 
 struct GenRandGenerator {
@@ -91,8 +91,8 @@ public:
 
     void partitionedGenerateLevels( uint32_t seed, const uint32_t partitionStartIndex,
                                     const uint32_t partitionEndIndex ) {
-        for( std::size_t i = partitionStartIndex ; i < partitionEndIndex ; ++i ) {
-            for( std::size_t ii = 0 ; ii < 50000 ; ii++ ) {
+        for( uint32_t i = partitionStartIndex ; i < partitionEndIndex ; ++i ) {
+            for( uint32_t ii = 0 ; ii < 50000 ; ii++ ) {
                 makeRoomSilentlyFail( levels_[i], seed );
                 if( levels_[i].rooms.size() == 99 ) {
                     break;
@@ -129,30 +129,24 @@ void printLevel( const Level & level ) {
     }
 }
 
-void generateLevels( const uint32_t threadNum, const uint32_t threadSeed,
-                     LevelGenerator<GenRandGenerator> & levelGenerator ) {
-    uint32_t loopStartIndex( threadNum * NUM_LEVS_PER_THREAD );
-    uint32_t loopEndIndex( loopStartIndex + NUM_LEVS_PER_THREAD );
-    printf("The seed of thread %d is: %d\n", threadNum + 1, threadSeed );
-    levelGenerator.partitionedGenerateLevels( threadSeed, loopStartIndex,
-                                              loopEndIndex );
-}
-
 int main(int argc, char* argv[]) {
 	clock_t start, stop;
 	start = clock();
 	int v = atoi(argv[1]);
 	printf("The random seed is: %d \n", v);
 	srand(v);
-    uint32_t gen( v );
 
     GenRandGenerator randGenerator;
     LevelGenerator<GenRandGenerator> levelGenerator( randGenerator, NUM_LEVS );
 
     std::vector<std::thread> threads( NUM_THREADS );
     for( uint32_t i = 0 ; i < NUM_THREADS ; ++i ) {
-        gen = v * ((i+1)*(i+1));
-        threads[i] = std::move( std::thread { generateLevels, i, gen, std::ref(levelGenerator) } );
+        uint32_t gen = v * ((i+1)*(i+1));
+        uint32_t partitionStartIndex( i * NUM_LEVS_PER_THREAD );
+        uint32_t partitionEndIndex( partitionStartIndex + NUM_LEVS_PER_THREAD );
+        threads[i] = std::move( std::thread {
+                std::bind( &LevelGenerator<GenRandGenerator>::partitionedGenerateLevels,
+                           &levelGenerator, gen, partitionStartIndex, partitionEndIndex ) } );
     }
 
     for( uint32_t i = 0 ; i < NUM_THREADS ; ++i ) {
