@@ -44,7 +44,8 @@ struct Level {
     }
 
     void fillTiles() {
-        for( std::vector<Room>::iterator rIter = rooms.begin(), end = rooms.end() ; rIter != end ; ++rIter ) {
+        for( std::vector<Room>::iterator rIter = rooms.begin(),
+                 end = rooms.end() ; rIter != end ; ++rIter ) {
             for( uint32_t yi = rIter->y ; yi <= ( rIter->y + rIter->h ) ; ++yi ) {
                 for( uint32_t xi = rIter->x ; xi <= ( rIter->x + rIter->w ) ; ++xi ) {
                     tiles[ yi * TILE_DIM + xi ].T = true;
@@ -66,12 +67,15 @@ class LevelGenerator {
 
         if( (x+w) < TILE_DIM && (y+h) < TILE_DIM && x != 0 && y != 0 &&
             !isCollision( level.rooms, x, y, w, h ) ) {
-            level.rooms.push_back( Room { x, y, w, h, (uint32_t)(level.rooms.size() + 1) } );
+            level.rooms.push_back( Room { x, y, w, h,
+                        (uint32_t)(level.rooms.size() + 1) } );
         }
     }
 
-    bool isCollision( std::vector<Room> & rooms, uint32_t x, uint32_t y, uint32_t w, uint32_t h ) {
-        for( std::vector<Room>::iterator rIter = rooms.begin(), end = rooms.end() ; rIter != end ; ++rIter ) {
+    bool isCollision( std::vector<Room> & rooms, const uint32_t x,
+                      const uint32_t y, const uint32_t w, const uint32_t h ) {
+        for( std::vector<Room>::iterator rIter = rooms.begin(),
+                 end = rooms.end() ; rIter != end ; ++rIter ) {
             if( !( ((rIter->x + rIter->w + 1 ) < x || rIter->x > (x + w + 1 )) ||
                    ((rIter->y + rIter->h + 1) < y || rIter->y > (y + h + 1 )) ) ) {
                 return true;
@@ -82,9 +86,11 @@ class LevelGenerator {
     RandomGenerator nextRandomGenerator_;
     std::vector<Level> levels_;
 public:
-    LevelGenerator( RandomGenerator randomGenerator, uint32_t numLevels ) : nextRandomGenerator_( randomGenerator ), levels_( numLevels ) {}
+    LevelGenerator( RandomGenerator randomGenerator, const uint32_t numLevels ) :
+        nextRandomGenerator_( randomGenerator ), levels_( numLevels, Level() ) {}
 
-    void partitionedGenerateLevels( uint32_t seed, uint32_t partitionStartIndex, uint32_t partitionEndIndex ) {
+    void partitionedGenerateLevels( uint32_t seed, const uint32_t partitionStartIndex,
+                                    const uint32_t partitionEndIndex ) {
         for( std::size_t i = partitionStartIndex ; i < partitionEndIndex ; ++i ) {
             for( std::size_t ii = 0 ; ii < 50000 ; ii++ ) {
                 makeRoomSilentlyFail( levels_[i], seed );
@@ -98,7 +104,8 @@ public:
 
     template <typename LevelMetric>
     Level & pickLevelByCriteria( LevelMetric levelMetric ) {
-        std::vector<Level>::iterator lIter = levels_.begin(), lEnd = levels_.end();
+        std::vector<Level>::iterator lIter = levels_.begin(),
+            lEnd = levels_.end();
         Level & result( *lIter++ );
         for( ; lIter != lEnd ; ++lIter ) {
             if( levelMetric.isBetterLevel( result, *lIter ) ) {
@@ -110,23 +117,25 @@ public:
 };
 
 struct NumRoomsMetric {
-    bool isBetterLevel( Level & x, Level & y ) {
+    bool isBetterLevel( const Level & x, const Level & y ) {
         return y.rooms.size() > x.rooms.size();
     }
 };
 
-void printLevel( Level & level ) {
+void printLevel( const Level & level ) {
     for( uint32_t i = 0 ; i < 2500 ; i++ ) {
         printf( "%d", (level.tiles[i].T ? 1 : 0 ) );
         if( i % ( TILE_DIM ) == 49 && i != 0 ) printf( "\n" );
     }
 }
 
-void generateLevels( const uint32_t threadNum, const uint32_t threadSeed, LevelGenerator<GenRandGenerator> & levelGenerator ) {
+void generateLevels( const uint32_t threadNum, const uint32_t threadSeed,
+                     LevelGenerator<GenRandGenerator> & levelGenerator ) {
     uint32_t loopStartIndex( threadNum * NUM_LEVS_PER_THREAD );
     uint32_t loopEndIndex( loopStartIndex + NUM_LEVS_PER_THREAD );
     printf("The seed of thread %d is: %d\n", threadNum + 1, threadSeed );
-    levelGenerator.partitionedGenerateLevels( threadSeed, loopStartIndex, loopEndIndex );
+    levelGenerator.partitionedGenerateLevels( threadSeed, loopStartIndex,
+                                              loopEndIndex );
 }
 
 int main(int argc, char* argv[]) {
