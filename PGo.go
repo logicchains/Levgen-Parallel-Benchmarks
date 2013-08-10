@@ -1,7 +1,7 @@
 package main
 
 import (
-  "flag"
+	"flag"
 	"fmt"
 	"runtime"
 	"time"
@@ -66,12 +66,9 @@ func MakeRoom(count uint32, seed *uint32) *[]Room {
 	for i := uint32(0); i < count; i++ {
 		x := Rand(seed) % TileDim
 		y := Rand(seed) % TileDim
-		if x*y == 0 {
-			continue
-		}
 		w := Rand(seed)%MaxWid + MinWid
 		h := Rand(seed)%MaxWid + MinWid
-		if x+w >= TileDim || y+h >= TileDim {
+		if x+w >= TileDim || y+h >= TileDim || x*y == 0 {
 			continue
 		}
 		iscrash := CheckColl(x, y, w, h, rs[0:counter])
