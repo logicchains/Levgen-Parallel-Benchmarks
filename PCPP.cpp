@@ -9,7 +9,7 @@ const uint32_t TILE_DIM = 50;
 const uint32_t MIW = 2;
 const uint32_t MAXWID = 8;
 const uint32_t NUM_LEVS = 800;
-const uint32_t NUM_THREADS = 2;
+const uint32_t NUM_THREADS = 4;
 const uint32_t NUM_LEVS_PER_THREAD = NUM_LEVS / NUM_THREADS;
 
 struct GenRandGenerator {
