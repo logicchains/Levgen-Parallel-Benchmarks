@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
 	}
 	struct Lev templ;
 	templ.lenrs=0;
-	for(i=0;i<100;i++){
+	for(i=0;i<NumLevs;i++){
 		if(ls[i].lenrs>templ.lenrs) templ=ls[i];
 	}
 	PrintLev(&templ);
