@@ -1,0 +1,8 @@
+#!/bin/bash
+PROJECT_DIR=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))/..
+
+MAINCLASS=Main
+
+
+exec java $JAVA_OPTS -cp "$PROJECT_DIR/target/scala-2.10/classes:/home/jonathan/.sbt/boot/scala-2.10.2/lib/scala-library.jar" "$MAINCLASS" "$@"
+
