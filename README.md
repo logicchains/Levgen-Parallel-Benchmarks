@@ -7,6 +7,10 @@ Rust is compiled with --opt-level=3
 
 C is compiled with -O3 -lpthread
 
+C++ is compiled with -O3 -pthread -std=c++11
+
+If using Clang++, C++ may need to be compiled with -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 , to avoid a bug in less-current versions of the LLVM.
+
 D is compiled with -O -release -inline -noboundscheck
 
 Nimrod is compiled with -d:release
