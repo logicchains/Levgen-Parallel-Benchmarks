@@ -23,7 +23,7 @@ object Main {
   val NumTries = 50000
   val Threadiness = 6.5 //how many threads to spawn per processor. Can be a double or float.
   val numThreads = (Runtime.getRuntime.availableProcessors()*Threadiness).toInt
-  val timesToRunBench = 5
+  val timesToRunBench = 15
   val warmupTime = 4000l
 
 
@@ -33,17 +33,26 @@ object Main {
 
     val startTime = System.currentTimeMillis()
 
-    var i = 0; var times = 0l; var maxTime = 0l
+    var i = 0; var times = 0l; var maxTime = (0l, 0)
     while((System.currentTimeMillis() - startTime) < warmupTime) {
       val res = bench(v, false)
-      maxTime = math.max(res, maxTime)
+      if(res > maxTime._1) {
+        maxTime = (res,i+1)
+      }
       times += res
       i += 1
     }
 
-    println(s"avg time from warm run: ${((0 until timesToRunBench) map (_ => bench(v,false)) reduceLeft (_+_)) / timesToRunBench.toDouble} ms")
-    println(s"avg time from cold run: ${times/i.toDouble} ms")
-    println(s"worst-case bench time: $maxTime ms")
+    def prettyRanking(num: Int) = num.toString.last match {
+      case '1' => num.toString + "st"
+      case '2' => num.toString + "nd"
+      case '3' => num.toString + "rd"
+      case _ => num.toString + "th"
+    }
+
+    println(s"Average time from warm run: ${((0 until timesToRunBench) map (_ => bench(v,false)) reduceLeft (_+_)) / timesToRunBench.toDouble} ms")
+    println(s"Average time from cold run: ${times/i.toDouble} ms")
+    println(s"Worst-case bench time: ${maxTime._1} ms. Recorded from the ${prettyRanking(maxTime._2)} run of the bench.")
 
   }
 
