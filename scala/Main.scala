@@ -21,11 +21,11 @@ object Main {
   val MaxWid = 8
   val NumLevels = 800
   val NumTries = 50000
-  val Threadiness = 6 //how many threads to spawn per processor. Can be a double or float.
+  val Threadiness = 6.5 //how many threads to spawn per processor. Can be a double or float.
 
 
   def main(args: Array[String]) {
-    println(s"The bench took ${time {
+    println(time {
 
       val numThreads = (Runtime.getRuntime.availableProcessors()*Threadiness).toInt
 
@@ -51,11 +51,13 @@ object Main {
 
       def max(l1: Lev, l2: Lev) = if(l1.ln > l2.ln) l1 else l2
 
-      val futureLevel: Future[Lev] = futureLevels map (_ map (i => i sortBy(_.ln) head)) reduceLeft ((f1,f2) => for(l1 <- f1; l2 <- f2) yield max(l1,l2))
+      def reducer(f1: Future[Lev], f2: Future[Lev]) = for(l1 <- f1; l2 <- f2) yield max(l1,l2)
+
+      val futureLevel: Future[Lev] = futureLevels map (j => j map (i => i reduceLeft max)) reduceLeft reducer
 
       val level = Await.result(futureLevel, Duration.Inf)
       printLev(level)
-    }} ms")
+    })
   }
 
   final def roomsRedux(start: Array[Room], tries: Int, ln: Int)(implicit rnd: Xorshift32): (Array[Room], Int) = {
