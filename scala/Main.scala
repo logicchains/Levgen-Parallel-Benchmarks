@@ -23,7 +23,7 @@ object Main {
   val NumTries = 50000
   val Threadiness = 6.5 //how many threads to spawn per processor. Can be a double or float.
   val numThreads = (Runtime.getRuntime.availableProcessors()*Threadiness).toInt
-  val timesToRunBench = 15
+  val timesToRunBench = 5
   val warmupTime = 4000l
 
 
@@ -33,14 +33,17 @@ object Main {
 
     val startTime = System.currentTimeMillis()
 
-    var i = 0; var times = 0l
+    var i = 0; var times = 0l; var maxTime = 0l
     while((System.currentTimeMillis() - startTime) < warmupTime) {
-      times += bench(v, true)
+      val res = bench(v, false)
+      maxTime = math.max(res, maxTime)
+      times += res
       i += 1
     }
 
     println(s"avg time from warm run: ${((0 until timesToRunBench) map (_ => bench(v,false)) reduceLeft (_+_)) / timesToRunBench.toDouble} ms")
     println(s"avg time from cold run: ${times/i.toDouble} ms")
+    println(s"worst-case bench time: $maxTime ms")
 
   }
 
