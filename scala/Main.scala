@@ -33,9 +33,11 @@ object Main {
 
     val startTime = System.currentTimeMillis()
 
+    val rnd = Xorshift32(v)
+
     var i = 0; var times = 0l; var maxTime = (0l, 0)
     while((System.currentTimeMillis() - startTime) < warmupTime) {
-      val res = bench(v, false)
+      val res = bench(rnd.nextInt, false)
       if(res > maxTime._1) {
         maxTime = (res,i+1)
       }
