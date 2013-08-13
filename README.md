@@ -11,4 +11,6 @@ D is compiled with -O -release -inline -noboundscheck
 
 Nimrod is compiled with -d:release
 
+Scala is run with sbt "run seed"
+
 They must be run with the seed as a command line parameter, like ./PC 123. PGo uses the seed in the form "PGo -v=seed", rather than just "PGo seed".
