@@ -9,4 +9,6 @@ C is compiled with -O3 -lpthread
 
 D is compiled with -O -release -inline -noboundscheck
 
+Nimrod is compiled with -d:release
+
 They must be run with the seed as a command line parameter, like ./PC 123. PGo uses the seed in the form "PGo -v=seed", rather than just "PGo seed".
