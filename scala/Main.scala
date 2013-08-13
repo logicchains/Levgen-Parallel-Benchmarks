@@ -22,22 +22,48 @@ object Main {
   val NumLevels = 800
   val NumTries = 50000
   val Threadiness = 6.5 //how many threads to spawn per processor. Can be a double or float.
+  val numThreads = (Runtime.getRuntime.availableProcessors()*Threadiness).toInt
+  val timesToRunBench = 15
+  val warmupTime = 4000l
 
 
   def main(args: Array[String]) {
-    println(time {
+    val v = args(0).toInt
+    println(s"The random seed is: $v")
 
-      val numThreads = (Runtime.getRuntime.availableProcessors()*Threadiness).toInt
+    val startTime = System.currentTimeMillis()
 
-      val v = args(0).toInt
-      println(s"The random seed is: $v")
-      val rand = Xorshift32(v)
+    var i = 0; var times = 0l
+    while((System.currentTimeMillis() - startTime) < warmupTime) {
+      times += bench(v, true)
+      i += 1
+    }
+
+    println(s"avg time from warm run: ${((0 until timesToRunBench) map (_ => bench(v,false)) reduceLeft (_+_)) / timesToRunBench.toDouble} ms")
+    println(s"avg time from cold run: ${times/i.toDouble} ms")
+
+  }
+
+
+  def bench(seed: Int, silent: Boolean = false) = {
+    def printLev(lev: Lev) {
+      val x = new StringBuffer
+      for (i <- 0 until 2500) {
+        x.append(if(lev.ts(i)) '1' else '0')
+        if(i % TileDim == 49 && i != 0) x.append('\n')
+      }
+      if(!silent) print(x.toString)
+    }
+
+    time {
+
+      val rand = Xorshift32(seed)
 
       val normNumLevels = NumLevels / numThreads
       val remNumLevels = normNumLevels + (NumLevels % numThreads)
 
       val levelsPerThread = (remNumLevels -> (numThreads - 1)) +: ((0 until numThreads - 1) map (threadNum => normNumLevels -> threadNum)) map {
-        case (numLvls, threadNum) => {val rnd = new Xorshift32(rand.nextInt); println(s"Thread number $threadNum has seed " +  rnd.seed); numLvls -> rnd}
+        case (numLvls, threadNum) => {val rnd = new Xorshift32(rand.nextInt); if(!silent) println(s"Thread number $threadNum has seed " +  rnd.seed); numLvls -> rnd}
       }
 
       val futureLevels = levelsPerThread map { case (levs, r) => future{
@@ -57,7 +83,7 @@ object Main {
 
       val level = Await.result(futureLevel, Duration.Inf)
       printLev(level)
-    })
+    }
   }
 
   final def roomsRedux(start: Array[Room], tries: Int, ln: Int)(implicit rnd: Xorshift32): (Array[Room], Int) = {
@@ -111,14 +137,5 @@ object Main {
       val num = yi*TileDim+xi
       ts(num)=true
     }
-  }
-
-  def printLev(lev: Lev){
-    val x = new StringBuffer
-    for (i <- 0 until 2500) {
-      x.append(if(lev.ts(i)) '1' else '0')
-      if(i % TileDim == 49 && i != 0) x.append('\n')
-    }
-    print(x.toString)
   }
 }
