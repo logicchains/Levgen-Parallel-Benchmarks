@@ -6,8 +6,8 @@
 #include <pthread.h>
 
 const int TileDim=50;
-const int Miw=2;
-const int MaxWid=8;
+const int WidMin=2;
+const int RestWidMax=8;
 
 #define NUM_LEVS 800
 #define NUM_THREADS 4
@@ -17,7 +17,7 @@ const int NumLevs=NUM_LEVS;
 
 
 struct Tile {
-  int X;
+	int X;
 	int Y;
 	int T;
 };
@@ -47,8 +47,6 @@ int GenRand(uint32_t *gen) {
 	return a;
 }
 
-
-
 int CheckColl(int x,int y,int w,int h, struct Room rs[100], int lenrs){
 	int i=0;
 	for(i=0;i<lenrs;i++){
@@ -68,8 +66,8 @@ int CheckColl(int x,int y,int w,int h, struct Room rs[100], int lenrs){
 void MakeRoom(struct Room rs[100], int *lenrs,uint32_t *gen){
 	int x = GenRand(gen) % TileDim;
 	int y = GenRand(gen) % TileDim;
-	int w = GenRand(gen) % MaxWid+Miw;
-	int h = GenRand(gen) % MaxWid+Miw;
+	int w = GenRand(gen) % RestWidMax+WidMin;
+	int h = GenRand(gen) % RestWidMax+WidMin;
 
 	if(x+w>=TileDim || y+h>=TileDim || x==0 || y==0) return;
 	int nocrash = CheckColl(x,y,w,h,rs,*lenrs);
@@ -116,7 +114,7 @@ void *MakeLevs(void *ThreadNum){
 	int LoopStart = *NumPointer * (NumLevs/NumThreads);
 	int i = 0;
 	uint32_t *Pgen= &gens[*NumPointer];
-	//printf("The seed of thread %d is:%d \n",*NumPointer,*Pgen);
+	//printf("The *gen of thread %d is:%d \n",*NumPointer,*Pgen);
 	for (i=LoopStart; i<LoopStart+NumLevs/NumThreads; i++) {
 		struct Room rs[100];
 		int lenrs=0;
@@ -150,7 +148,7 @@ int main(int argc, char* argv[]) {
 	clock_t start, stop;
 	start = clock();
 	int v = atoi(argv[1]);
-	printf("The random seed is: %d \n", v);
+	printf("The random *gen is: %d \n", v);
 	srand(v);
 	uint32_t gen = v;
 	pthread_t threads[NumThreads];
@@ -159,7 +157,7 @@ int main(int argc, char* argv[]) {
 		pthread_t thread;
 		threads[i] = thread;
 		gens[i] = gen * (i+1)*(i+1);
-		printf("The seed of thread %d is:%d \n",i+1,gens[i]);
+		printf("The *gen of thread %d is:%d \n",i+1,gens[i]);
 	}
 	int constints[NumThreads];
 	for (i=0;i<NumThreads;i++){
@@ -179,13 +177,13 @@ int main(int argc, char* argv[]) {
 	}
 	struct Lev templ;
 	templ.lenrs=0;
-	for(i=0;i<NumLevs;i++){
+	for(i=0;i<100;i++){
 		if(ls[i].lenrs>templ.lenrs) templ=ls[i];
 	}
 	PrintLev(&templ);
 	stop = clock();
-	long clocks_per_ms = (CLOCKS_PER_SEC/1000.0);
-        printf("%ld\n", (stop - start)/clocks_per_ms/NUM_THREADS);
+	long clocks_per_ms = CLOCKS_PER_SEC/1000;
+        printf("%ld\n", (stop - start)/clocks_per_ms);
 
     return 0;
 }
