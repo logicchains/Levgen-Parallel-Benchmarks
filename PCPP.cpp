@@ -6,8 +6,8 @@
 #include <thread>
 
 const uint32_t TILE_DIM = 50;
-const uint32_t MIW = 2;
-const uint32_t MAXWID = 8;
+const uint32_t WIDMIN = 2;
+const uint32_t RESTWIDMAX = 8;
 const uint32_t NUM_LEVS = 800;
 const uint32_t NUM_THREADS = 4;
 const uint32_t NUM_LEVS_PER_THREAD = NUM_LEVS / NUM_THREADS;
@@ -61,8 +61,8 @@ class LevelGenerator {
     void makeRoomSilentlyFail( Level & level, uint32_t & gen ) {
         uint32_t x( nextRandomGenerator_( gen ) % TILE_DIM );
         uint32_t y( nextRandomGenerator_( gen ) % TILE_DIM );
-        uint32_t w( (nextRandomGenerator_( gen ) % MAXWID) + MIW );
-        uint32_t h( (nextRandomGenerator_( gen ) % MAXWID) + MIW );
+        uint32_t w( (nextRandomGenerator_( gen ) % RESTWIDMAX) + WIDMIN );
+        uint32_t h( (nextRandomGenerator_( gen ) % RESTWIDMAX) + WIDMIN );
 
         if( (x+w) < TILE_DIM && (y+h) < TILE_DIM && x != 0 && y != 0 &&
             !isCollision( level.rooms, x, y, w, h ) ) {
