@@ -9,8 +9,8 @@ import (
 
 const (
 	TileDim = 50
-	MinWid  = 2
-	MaxWid  = 8
+	WidMin  = 2
+	RestWidMax  = 8
 	NumLevs = 800
 	NumTries = 50000
 )
@@ -66,8 +66,8 @@ func MakeRoom(count uint32, seed *uint32) *[]Room {
 	for i := uint32(0); i < count; i++ {
 		x := Rand(seed) % TileDim
 		y := Rand(seed) % TileDim
-		w := Rand(seed)%MaxWid + MinWid
-		h := Rand(seed)%MaxWid + MinWid
+		w := Rand(seed)%RestWidMax + WidMin
+		h := Rand(seed)%RestWidMax + WidMin
 		if x+w >= TileDim || y+h >= TileDim || x*y == 0 {
 			continue
 		}
