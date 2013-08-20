@@ -1,11 +1,11 @@
 // Compile with:
-// ldmd2 -noruntime -release -inline -O -noboundscheck bench2.d
+// ldmd2 -release -inline -O -noboundscheck PD.d
 
 import core.stdc.stdio, core.stdc.stdlib, std.concurrency;;
 
 enum int TileDim = 50;
-enum int Miw = 2;
-enum int MaxWid = 8;
+enum int WidMin = 2;
+enum int RestWidMax = 8;
 
 enum int NumThreads=4;
 enum int NumLevs=800;
@@ -66,8 +66,8 @@ int CheckColl(in int x, in int y, in int w, in int h,
 void MakeRoom(shared ref Room rs[100], int* lenrs, uint* gen) pure nothrow {
     immutable int x = GenRand(gen) % TileDim;
     immutable int y = GenRand(gen) % TileDim;
-    immutable int w = GenRand(gen) % MaxWid+Miw;
-    immutable int h = GenRand(gen) % MaxWid+Miw;
+    immutable int w = GenRand(gen) % RestWidMax+WidMin;
+    immutable int h = GenRand(gen) % RestWidMax+WidMin;
     
     if (x + w >= TileDim || y + h >= TileDim || x == 0 || y == 0)
         return;
@@ -121,7 +121,7 @@ void MakeLevs(const uint strNum,const uint Pgen,shared Lev[NumLevs] *ls) {
                 break;
             }
         }
-        shared Tile[2500] ts = void;
+	shared Tile[2500] ts = void;
         for (ii = 0; ii < 2500; ii++) {
             ts[ii].X = ii % TileDim;
             ts[ii].Y = ii / TileDim;
@@ -134,7 +134,7 @@ void MakeLevs(const uint strNum,const uint Pgen,shared Lev[NumLevs] *ls) {
         l.rs = rs;
         l.ts = ts;
         l.lenrs = lenrs;
-	      (*ls)[i]=l;
+	(*ls)[i]=l;
     }
     auto ownerID = ownerTid();
     send(ownerID,true);
@@ -148,19 +148,19 @@ void main(string[] args)   {
     uint *Pgen = &gen;
     Tid threads[NumThreads];
     for (int i=0;i<NumThreads;i++){
-	    const uint thisGen = *Pgen*(i+1)*(i+1);
-	    const uint ii = i;
-      auto tid = spawn(&MakeLevs, ii,thisGen,&ls);
-	    threads[i]=tid;
+	const uint thisGen = *Pgen*(i+1)*(i+1);
+	const uint ii = i;
+        auto tid = spawn(&MakeLevs, ii,thisGen,&ls);
+	threads[i]=tid;
     }    
     for (int i=0;i<NumThreads;i++){
-	    auto done = receiveOnly!(bool)();
-	    while (done==false){};
+	auto done = receiveOnly!(bool)();
+	while (done==false){};
     }
     shared Lev templ = void;
     templ.lenrs = 0;
     for (int i = 0; i < NumLevs; i++) {
-	    if (ls[i].lenrs > templ.lenrs)
+	if (ls[i].lenrs > templ.lenrs)
             templ = ls[i];
     }
  
