@@ -31,11 +31,7 @@ struct Tile {
 
 struct Room {
     Room(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t roomNum)
-        : x(x)
-        , y(y)
-        , w(w)
-        , h(h)
-        , roomNum(roomNum)
+        : x(x), y(y), w(w), h(h), roomNum(roomNum)
     {
     }
 
