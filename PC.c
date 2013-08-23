@@ -182,8 +182,8 @@ int main(int argc, char* argv[]) {
 	}
 	PrintLev(&templ);
 	stop = clock();
-	long clocks_per_ms = CLOCKS_PER_SEC/1000;
-        printf("%ld\n", (stop - start)/clocks_per_ms);
+	//long clocks_per_ms = CLOCKS_PER_SEC/1000;
+        //printf("%ld\n", (stop - start)/clocks_per_ms);
 
     return 0;
 }
