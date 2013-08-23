@@ -13,7 +13,7 @@ If using Clang++, C++ may need to be compiled with -D__GCC_HAVE_SYNC_COMPARE_AND
 
 D is compiled with -O -release -inline -noboundscheck
 
-Nimrod is compiled with -d:release
+Nimrod is compiled with -d:release, and --threads:on if using the llvm one (the llvm doesn't support OpenMP).
 
 Scala is run with sbt "run seed" from within the scala folder.
 
