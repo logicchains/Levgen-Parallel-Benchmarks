@@ -31,9 +31,7 @@ struct Tile {
 
 struct Room {
     Room(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t roomNum)
-        : x(x), y(y), w(w), h(h), roomNum(roomNum)
-    {
-    }
+        : x(x), y(y), w(w), h(h), roomNum(roomNum) { }
 
     uint32_t x, y, w, h, roomNum;
 };
@@ -98,7 +96,7 @@ public:
     void partitionedGenerateLevels( uint32_t seed, const uint32_t partitionStartIndex,
                                     const uint32_t partitionEndIndex ) {
         for( uint32_t i = partitionStartIndex ; i < partitionEndIndex ; ++i ) {
-            size_t roomsAdded = 0;
+            uint32_t roomsAdded = 0;
             for( uint32_t ii = 0 ; ii < 50000 ; ii++ ) {
                 roomsAdded += static_cast<size_t>(makeRoomSilentlyFail( levels_[i], seed ));
                 if (roomsAdded == 99) break;
