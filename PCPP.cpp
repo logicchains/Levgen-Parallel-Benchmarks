@@ -90,11 +90,7 @@ class LevelGenerator {
     }
     RandomGenerator nextRandomGenerator_;
     std::vector<Level> levels_;
-
-    // make sure no one copies this (that would be slower)
-    LevelGenerator(const LevelGenerator&);
-    LevelGenerator& operator=(const LevelGenerator&);
-
+    
 public:
     LevelGenerator( RandomGenerator randomGenerator, const uint32_t numLevels ) :
         nextRandomGenerator_( randomGenerator ), levels_( numLevels, Level() ) {}
