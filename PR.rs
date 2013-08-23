@@ -1,4 +1,7 @@
-use std::{os, int, uint,u32, vec,comm};
+extern mod extra;
+
+use std::{os, int, uint, u32, vec, comm};
+use extra::time;
 
 static TileDim: u32 = 50;
 static WidMin: u32  = 2;
@@ -9,6 +12,7 @@ static NumCores: uint = 4;
 static NumTries: uint = 50000;
 
 fn main() {
+    let start = time::precise_time_ns();
     let args = os::args();
     let str = (args[1]);
     let v = int::from_str(str).get_or_default(18);
@@ -33,6 +37,9 @@ fn main() {
     }
     let biggest_lev = find_most_rooms(ls);
     print_lev(biggest_lev);
+    let end = time::precise_time_ns();
+    let elapsed = end - start;
+    println(fmt!("Time in ms: %f", (((elapsed as f64)/1000.0/1000.0)) as float));
 }
 
 fn MakeLevs(n: uint, gen:&mut u32) -> ~[Lev] {
