@@ -28,7 +28,7 @@ object Main {
       case _ => num.toString + "th"
     }
 
-    println(s"Average time from warm run: ${((0 until timesToRunBench) map (_ => Bench.bench(rnd.nextInt,false)) reduceLeft (_+_)) / timesToRunBench.toDouble} ms")
+    println(s"Average time from warm run: ${((0 until timesToRunBench) map (_ => Bench.bench(rnd.nextInt, false)) reduceLeft (_+_)) / timesToRunBench.toDouble} ms")
     println(s"Average time from cold run: ${times/i.toDouble} ms")
     println(s"Worst-case bench time: ${maxTime._1} ms. Recorded from the ${prettyRanking(maxTime._2)} run of the bench.")
 

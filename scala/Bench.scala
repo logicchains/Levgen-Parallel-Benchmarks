@@ -60,8 +60,7 @@ object Bench {
 
       val futureLevel: Future[Lev] = futureLevels map (j => j map (i => i reduceLeft max)) reduceLeft reducer
 
-      val level = Await.result(futureLevel, Duration.Inf)
-      printLev(level)
+      Await.result(futureLevel map printLev, Duration.Inf)
     }
   }
 
