@@ -16,17 +16,11 @@ const (
 )
 
 type Tile struct {
-	X uint32
-	Y uint32
-	T uint32
+	X, Y, T uint32
 }
 
 type Room struct {
-	X uint32
-	Y uint32
-	W uint32
-	H uint32
-	N uint32
+	X, Y, W, H, N uint32
 }
 
 type Lev struct {
