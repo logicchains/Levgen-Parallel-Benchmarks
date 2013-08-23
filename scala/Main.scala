@@ -2,12 +2,12 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-case class Room(X: Int, Y: Int, W: Int, H: Int)
+final case class Room(X: Int, Y: Int, W: Int, H: Int)
 
-case class Lev(rs: Array[Room], ts: Array[Boolean], ln: Int)
+final case class Lev(rs: Array[Room], ts: Array[Boolean], ln: Int)
 
-case class Xorshift32(var seed: Int) {
-  final def nextInt = {
+final case class Xorshift32(var seed: Int) {
+  def nextInt = {
     seed ^= seed << 13
     seed ^= seed >>> 17
     seed ^= seed << 5
@@ -100,7 +100,7 @@ object Main {
     }
   }
 
-  final def roomsRedux(start: Array[Room], tries: Int, ln: Int)(implicit rnd: Xorshift32): (Array[Room], Int) = {
+  def roomsRedux(start: Array[Room], tries: Int, ln: Int)(implicit rnd: Xorshift32): (Array[Room], Int) = {
     if(tries > 0) {
       val x = makeRoom(start, ln)
       start(ln) = x
@@ -118,12 +118,12 @@ object Main {
     System.currentTimeMillis() - start
   }
 
-  final def myAbs(n: Int) = {
+  def myAbs(n: Int) = {
     val mask = n >> 31
     (mask ^ n) - mask
   }
 
-  final def makeRoom(rooms: Array[Room], ln: Int)(implicit rnd: Xorshift32) = {
+  def makeRoom(rooms: Array[Room], ln: Int)(implicit rnd: Xorshift32) = {
     val w = (myAbs(rnd.nextInt)%MaxWid)+MinWid
     val h = (myAbs(rnd.nextInt)%MaxWid)+MinWid
     val x = myAbs(rnd.nextInt)%TileDim
@@ -135,7 +135,7 @@ object Main {
       null
   }
 
-  final def checkColl(x: Int,y: Int,w: Int,h: Int, rs: Array[Room], ln: Int): Boolean = {
+  def checkColl(x: Int,y: Int,w: Int,h: Int, rs: Array[Room], ln: Int): Boolean = {
     var i = 0
     while(i < ln)
     {
