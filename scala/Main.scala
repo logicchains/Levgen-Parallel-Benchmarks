@@ -21,7 +21,7 @@ object Main {
   val MaxWid = 8
   val NumLevels = 800
   val NumTries = 50000
-  val Threadiness = 6.5 //how many threads to spawn per processor. Can be a double or float.
+  val Threadiness = 1.0 //how many threads to spawn per processor. Can be a double or float.
   val numThreads = (Runtime.getRuntime.availableProcessors()*Threadiness).toInt
   val timesToRunBench = 15
   val warmupTime = 4000l
