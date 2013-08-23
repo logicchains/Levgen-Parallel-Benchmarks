@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	TileDim = 50
-	MinWid  = 2
-	MaxWid  = 8
-	NumLevs = 800
-	NumTries = 50000
+	TileDim    = 50
+	WidMin     = 2
+	RestWidMax = 8
+	NumLevs    = 800
+	NumTries   = 50000
 )
 
 type Tile struct {
@@ -30,25 +30,23 @@ type Room struct {
 }
 
 type Lev struct {
-	ts *[]Tile
-	rs []Room
+	ts []Tile
+	rs []*Room
 }
 
 var seed uint32
 
-func Rand(seed *uint32) uint32 {
-	*seed <<= 1
-        sext := uint32(int32(*seed)>>31) & 0x88888eef
-	*seed ^= sext ^ 1
-	return *seed
-
+func Rand(seed *uint32) (s uint32) {
+	s = *seed
+	s <<= 1
+	sext := uint32(int32(s)>>31) & 0x88888eef
+	s ^= sext ^ 1
+	*seed = s
+	return
 }
 
-
-func CheckColl(x, y, w, h uint32, rs []Room) bool {
-	var r *Room
-	for i := range rs {
-		r = &rs[i]
+func CheckColl(x, y, w, h uint32, rs []*Room) bool {
+	for _, r := range rs {
 		if (r.X+r.W+1) < x || r.X > (x+w+1) {
 			continue
 		}
@@ -60,31 +58,28 @@ func CheckColl(x, y, w, h uint32, rs []Room) bool {
 	return false
 }
 
-func MakeRoom(count uint32, seed *uint32) *[]Room {
-	rs := make([]Room, 100)
-	counter := uint32(0)
+func MakeRoom(count uint32, seed *uint32) []*Room {
+	rs := make([]*Room, 0, 100)
 	for i := uint32(0); i < count; i++ {
 		x := Rand(seed) % TileDim
 		y := Rand(seed) % TileDim
-		w := Rand(seed)%MaxWid + MinWid
-		h := Rand(seed)%MaxWid + MinWid
+		w := Rand(seed)%RestWidMax + WidMin
+		h := Rand(seed)%RestWidMax + WidMin
 		if x+w >= TileDim || y+h >= TileDim || x*y == 0 {
 			continue
 		}
-		iscrash := CheckColl(x, y, w, h, rs[0:counter])
-		if iscrash == false {
-			rs[counter] = Room{x, y, w, h, counter}
-			counter++
+		iscrash := CheckColl(x, y, w, h, rs)
+		if !iscrash {
+			rs = append(rs, &Room{x, y, w, h, uint32(len(rs))})
 		}
-		if counter == 99 {
+		if len(rs) == 99 {
 			break
 		}
 	}
-	x := rs[0:counter]
-	return &x
+	return rs
 }
 
-func Room2Tiles(r *Room, ts *[]Tile) {
+func Room2Tiles(r *Room, ts []Tile) {
 	x := r.X
 	y := r.Y
 	w := r.W
@@ -92,13 +87,13 @@ func Room2Tiles(r *Room, ts *[]Tile) {
 	for xi := x; xi <= x+w; xi++ {
 		for yi := y; yi <= y+h; yi++ {
 			num := yi*TileDim + xi
-			(*ts)[num].T = 1
+			ts[num].T = 1
 		}
 	}
 }
 
 func PrintLev(l *Lev) {
-	for i, t := range *l.ts {
+	for i, t := range l.ts {
 		fmt.Printf("%v", t.T)
 		if i%(TileDim) == 49 && i != 0 {
 			fmt.Print("\n")
@@ -106,49 +101,44 @@ func PrintLev(l *Lev) {
 	}
 }
 
-func godo(limchan chan bool, levchan chan *Lev, seed *uint32) {
-	rs := MakeRoom(NumTries,seed)
-	ts := make([]Tile, 2500)
-	for ii := uint32(0); ii < 2500; ii++ {
-		ts[ii] = Tile{X: ii % TileDim, Y: ii / TileDim, T: 0}
+func godo(levchan chan<- *Lev, seeds <-chan uint32) {
+	for seed := range seeds {
+		rs := MakeRoom(NumTries, &seed)
+		ts := make([]Tile, 0, 2500)
+		for i := uint32(0); i < 2500; i++ {
+			ts = append(ts, Tile{X: i % TileDim, Y: i / TileDim})
+		}
+		for _, r := range rs {
+			Room2Tiles(r, ts)
+		}
+		levchan <- &Lev{ts, rs}
 	}
-	for _, r := range *rs {
-		Room2Tiles(&r, &ts)
-	}
-	lev := &Lev{&ts, *rs}
-	levchan <- lev
-	limchan <- false
 }
-
-var vflag = flag.Int("v", 18, "Random Seed")
 
 func main() {
 	start := time.Now()
 	nc := runtime.NumCPU()
 	runtime.GOMAXPROCS(nc)
-	limchan := make(chan bool, nc)
-	levchan := make(chan *Lev, NumLevs)
-	for i := 0; i < nc; i++ {
-		limchan <- false
-	}
+	vflag := flag.Int("v", 18, "Random Seed")
 	flag.Parse()
 	var v int = *vflag
 	fmt.Printf("Random seed: %v\n", v)
 	seed = ^uint32(v)
-	var i uint32
-	for i = 0; i < NumLevs; i++ {
-		<-limchan
-		newseed := seed*(i+1)*(i+1)
-		go godo(limchan, levchan,&newseed)
+	levchan := make(chan *Lev, NumLevs)
+	seeds := make(chan uint32, NumLevs)
+	for i := 0; i < nc; i++ {
+		go godo(levchan, seeds)
 	}
-	templ := Lev{}
+	for i := uint32(0); i < NumLevs; i++ {
+		seeds <- seed * (i + 1) * (i + 1)
+	}
+	var templ Lev
 	for i := 0; i < NumLevs; i++ {
 		x := <-levchan
-		if len((*x).rs) > len(templ.rs) {
+		if len(x.rs) > len(templ.rs) {
 			templ = *x
 		}
 	}
 	PrintLev(&templ)
-	end := time.Now()
-	fmt.Printf("Time in ms: %d\n", (end.Sub(start) / 1000000))
+	fmt.Printf("Time in ms: %d\n", (time.Since(start) / 1000000))
 }

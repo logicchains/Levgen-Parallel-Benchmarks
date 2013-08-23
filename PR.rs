@@ -1,8 +1,8 @@
 use std::{os, int, uint,u32, vec,comm};
 
 static TileDim: u32 = 50;
-static MinWid: u32  = 2;
-static MaxWid: u32  = 8;
+static WidMin: u32  = 2;
+static RestWidMax: u32  = 8;
 
 static NumLevs: uint= 800; 
 static NumCores: uint = 4;
@@ -18,7 +18,7 @@ fn main() {
     let (port, chan) = stream();
     let chan = comm::SharedChan::new(chan);
     for uint::range(0,NumCores)|val| {
-        let child_chan = chan.clone();
+	let child_chan = chan.clone();
         do spawn {
             let thisnum = val.to_u32()+1;
             let mut newprng = prng.clone()*thisnum*thisnum;
@@ -84,8 +84,8 @@ fn rooms(n: uint,gen:&mut u32) -> ~[Room] {
     for NumTries.times {
 	let x = GenRand(gen) % TileDim;
 	let y = GenRand(gen) % TileDim;
-	let w = GenRand(gen) % MaxWid+MinWid;
-	let h = GenRand(gen) % MaxWid+MinWid;
+	let w = GenRand(gen) % RestWidMax+WidMin;
+	let h = GenRand(gen) % RestWidMax+WidMin;
         if x + w < TileDim &&
            y + h < TileDim &&
            x != 0 &&
