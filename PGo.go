@@ -18,12 +18,9 @@ const (
 type Tile uint8
 
 type Room struct {
-	X uint32
-	Y uint32
-	W uint32
-	H uint32
-	N uint32
+	X, Y, W, H, N uint32
 }
+
 
 type Lev struct {
 	ts []Tile
