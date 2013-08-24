@@ -1,7 +1,7 @@
-#include <inttypes.h>
+#include <cstdint>
 #include <vector>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <iostream>
 #include <time.h>
 #include <thread>
 
@@ -30,6 +30,9 @@ struct Tile {
 };
 
 struct Room {
+    Room(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t roomNum)
+        : x(x), y(y), w(w), h(h), roomNum(roomNum) { }
+
     uint32_t x, y, w, h, roomNum;
 };
 
@@ -44,7 +47,7 @@ struct Level {
     }
 
     void fillTiles() {
-        for( Room & r : rooms ) {
+        for( const Room & r : rooms ) {
             for( uint32_t yi = r.y ; yi <= ( r.y + r.h ) ; ++yi ) {
                 for( uint32_t xi = r.x ; xi <= ( r.x + r.w ) ; ++xi ) {
                     tiles[ yi * TILE_DIM + xi ].T = true;
@@ -52,13 +55,14 @@ struct Level {
             }
         }
     }
+
     std::vector<Tile> tiles;
     std::vector<Room> rooms;
 };
 
 template <typename RandomGenerator>
 class LevelGenerator {
-    void makeRoomSilentlyFail( Level & level, uint32_t & gen ) {
+    bool makeRoomSilentlyFail( Level & level, uint32_t & gen ) {
         uint32_t x( nextRandomGenerator_( gen ) % TILE_DIM );
         uint32_t y( nextRandomGenerator_( gen ) % TILE_DIM );
         uint32_t w( (nextRandomGenerator_( gen ) % RESTWIDMAX) + WIDMIN );
@@ -66,13 +70,15 @@ class LevelGenerator {
 
         if( (x+w) < TILE_DIM && (y+h) < TILE_DIM && x != 0 && y != 0 &&
             !isCollision( level.rooms, x, y, w, h ) ) {
-            level.rooms.push_back( Room { x, y, w, h, (uint32_t)(level.rooms.size() + 1) } );
+                level.rooms.emplace_back(x, y, w, h, (uint32_t)(level.rooms.size() + 1));
+                return true;
         }
+        return false;
     }
 
-    bool isCollision( std::vector<Room> & rooms, const uint32_t x,
+    static bool isCollision(const std::vector<Room> & rooms, const uint32_t x,
                       const uint32_t y, const uint32_t w, const uint32_t h ) {
-        for( Room & r : rooms ) {
+        for(const Room & r : rooms ) {
             if( !( ((r.x + r.w + 1 ) < x || r.x > (x + w + 1 )) ||
                    ((r.y + r.h + 1) < y || r.y > (y + h + 1 )) ) ) {
                 return true;
@@ -82,6 +88,7 @@ class LevelGenerator {
     }
     RandomGenerator nextRandomGenerator_;
     std::vector<Level> levels_;
+    
 public:
     LevelGenerator( RandomGenerator randomGenerator, const uint32_t numLevels ) :
         nextRandomGenerator_( randomGenerator ), levels_( numLevels, Level() ) {}
@@ -89,11 +96,10 @@ public:
     void partitionedGenerateLevels( uint32_t seed, const uint32_t partitionStartIndex,
                                     const uint32_t partitionEndIndex ) {
         for( uint32_t i = partitionStartIndex ; i < partitionEndIndex ; ++i ) {
+            uint32_t roomsAdded = 0;
             for( uint32_t ii = 0 ; ii < 50000 ; ii++ ) {
-                makeRoomSilentlyFail( levels_[i], seed );
-                if( levels_[i].rooms.size() == 99 ) {
-                    break;
-                }
+                roomsAdded += static_cast<size_t>(makeRoomSilentlyFail( levels_[i], seed ));
+                if (roomsAdded == 99) break;
             }
             levels_[i].fillTiles();
         }
@@ -102,13 +108,13 @@ public:
     template <typename LevelMetric>
     Level & pickLevelByCriteria( LevelMetric levelMetric ) {
         auto lIter = levels_.begin(), lEnd = levels_.end();
-        Level & result( *lIter++ );
+        Level * result( &*lIter++ );
         for( ; lIter != lEnd ; ++lIter ) {
-            if( levelMetric.isBetterLevel( result, *lIter ) ) {
-                result = *lIter;
+            if( levelMetric.isBetterLevel( *result, *lIter ) ) {
+                result = &*lIter;
             }
         }
-        return result;
+        return *result;
     }
 };
 
@@ -120,8 +126,8 @@ struct NumRoomsMetric {
 
 void printLevel( const Level & level ) {
     for( uint32_t i = 0 ; i < 2500 ; i++ ) {
-        printf( "%d", (level.tiles[i].T ? 1 : 0 ) );
-        if( i % ( TILE_DIM ) == 49 && i != 0 ) printf( "\n" );
+        std::cout <<  (level.tiles[i].T ? 1 : 0 );
+        if( i % ( TILE_DIM ) == 49 && i != 0 ) std::cout << std::endl;
     }
 }
 
@@ -129,21 +135,20 @@ int main(int argc, char* argv[]) {
     clock_t start, stop;
     start = clock();
     int v = atoi(argv[1]);
-    printf("The random seed is: %d \n", v);
+    std::cout << "The random seed is: " << v << std::endl;
     srand(v);
 
     GenRandGenerator randGenerator;
     LevelGenerator<GenRandGenerator> levelGenerator( randGenerator, NUM_LEVS );
 
-    std::vector<std::thread> threads( NUM_THREADS );
+    std::vector<std::thread> threads; threads.reserve( NUM_THREADS );
     for( uint32_t i = 0 ; i < NUM_THREADS ; ++i ) {
         uint32_t threadSeed = v * ((i+1)*(i+1));
-        printf("The seed of thread %d is: %d\n", i + 1, threadSeed );
+        std::cout << "The seed of thread " << i << " is: " << threadSeed << std::endl;
         uint32_t partitionStartIndex( i * NUM_LEVS_PER_THREAD );
         uint32_t partitionEndIndex( partitionStartIndex + NUM_LEVS_PER_THREAD );
-        threads[i] = std::move( std::thread {
-                std::bind( &LevelGenerator<GenRandGenerator>::partitionedGenerateLevels,
-                           &levelGenerator, threadSeed, partitionStartIndex, partitionEndIndex ) } );
+        threads.emplace_back(std::bind( &LevelGenerator<GenRandGenerator>::partitionedGenerateLevels,
+                           &levelGenerator, threadSeed, partitionStartIndex, partitionEndIndex ));
     }
 
     for( uint32_t i = 0 ; i < NUM_THREADS ; ++i ) {
@@ -155,6 +160,6 @@ int main(int argc, char* argv[]) {
 
     stop = clock();
     long clocks_per_ms = CLOCKS_PER_SEC/1000;
-    printf("%ld\n", (stop - start)/clocks_per_ms);
+    std::cout << (stop - start)/clocks_per_ms << std::endl;
     return 0;
 }
