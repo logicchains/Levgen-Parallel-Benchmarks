@@ -15,11 +15,7 @@ const (
 	NumTries   = 50000
 )
 
-type Tile struct {
-	X uint32
-	Y uint32
-	T uint32
-}
+type Tile uint8
 
 type Room struct {
 	X uint32
@@ -87,14 +83,14 @@ func Room2Tiles(r *Room, ts []Tile) {
 	for xi := x; xi <= x+w; xi++ {
 		for yi := y; yi <= y+h; yi++ {
 			num := yi*TileDim + xi
-			ts[num].T = 1
+			ts[num] = 1
 		}
 	}
 }
 
 func PrintLev(l *Lev) {
 	for i, t := range l.ts {
-		fmt.Printf("%v", t.T)
+		fmt.Printf("%v", t)
 		if i%(TileDim) == 49 && i != 0 {
 			fmt.Print("\n")
 		}
@@ -104,10 +100,7 @@ func PrintLev(l *Lev) {
 func godo(levchan chan<- *Lev, seeds <-chan uint32) {
 	for seed := range seeds {
 		rs := MakeRoom(NumTries, &seed)
-		ts := make([]Tile, 0, 2500)
-		for i := uint32(0); i < 2500; i++ {
-			ts = append(ts, Tile{X: i % TileDim, Y: i / TileDim})
-		}
+		ts := make([]Tile, 2500)
 		for _, r := range rs {
 			Room2Tiles(r, ts)
 		}
