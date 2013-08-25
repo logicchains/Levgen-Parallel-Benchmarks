@@ -17,4 +17,4 @@ Nimrod is compiled with -d:release, and --threads:on if using the llvm one (the 
 
 Scala is run with ```target/start seed``` after running ```sbt add-start-script-tasks start-script``` in the scala folder.
 
-They must be run with the seed as a command line parameter, like ./PC 123. PGo uses the seed in the form "PGo -v=seed", rather than just "PGo seed".
+They must be run with the seed as a command line parameter, like ./PC 123.
