@@ -1,18 +1,20 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"os"
 	"runtime"
+	"strconv"
 	"time"
 )
 
 const (
-	TileDim    = 50
-	WidMin     = 2
-	RestWidMax = 8
-	NumLevs    = 800
-	NumTries   = 50000
+	TileDim     = 50
+	WidMin      = 2
+	RestWidMax  = 8
+	NumLevs     = 800
+	NumTries    = 50000
+	DefaultSeed = "18"
 )
 
 type Tile uint8
@@ -20,7 +22,6 @@ type Tile uint8
 type Room struct {
 	X, Y, W, H, N uint32
 }
-
 
 type Lev struct {
 	ts []Tile
@@ -105,13 +106,23 @@ func godo(levchan chan<- *Lev, seeds <-chan uint32) {
 	}
 }
 
+func getSeed() uint32 {
+	arg0 := DefaultSeed
+	if len(os.Args) > 1 {
+		arg0 = os.Args[1]
+	}
+	val, err := strconv.ParseUint(arg0, 10, 32)
+	if err != nil {
+		panic(err)
+	}
+	return uint32(val)
+}
+
 func main() {
 	start := time.Now()
 	nc := runtime.NumCPU()
 	runtime.GOMAXPROCS(nc)
-	vflag := flag.Int("v", 18, "Random Seed")
-	flag.Parse()
-	var v int = *vflag
+	v := getSeed()
 	fmt.Printf("Random seed: %v\n", v)
 	seed = ^uint32(v)
 	levchan := make(chan *Lev, NumLevs)
