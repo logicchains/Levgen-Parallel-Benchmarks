@@ -1,0 +1,131 @@
+module PNt;
+alias TileDim = 50;
+alias MinWid = 2;
+alias RestWidMax = 8;
+alias NumThreads = 4;
+alias NumLevs = 800;
+alias NumTries = 50000;
+ 
+import c.stdlib, std.getopt, std.string, std.thread;
+ 
+int GenRand(size_t* genp) {
+  alias gen = *genp;
+  gen += gen;
+  gen xor= 1;
+  if (int:gen < 0) {
+    gen xor= 0x88888eef;
+  }
+  return int:gen;
+}
+ 
+void main(string[] args) {
+  int v;
+  using new Options {
+    addLong("seed", "v", λ(string s) v = s.atoi(););
+    args = process args;
+  }
+  writeln "The random seed is: $v";
+  size_t gen = size_t:v;
+  auto ls = new Lev[] NumLevs;
+  
+  auto tp = new ThreadPool NumThreads;
+  for ref l <- ls && int i <- ints tp.addTask new λ{
+    auto myGen = gen * size_t:(i + 1) * size_t:(i + 1); // ?
+    l.init;
+    alias rs = l.rs;
+    alias ts = l.ts;
+    int lenrs;
+    for 0 .. NumTries {
+      lenrs = MakeRoom(rs.ptr, lenrs, &myGen);
+      if (lenrs == 99) {
+        // break;
+      }
+    }
+    for ref t <- ts && int ii <- ints {
+      t.(X, Y, T) = (ii % TileDim, ii / TileDim, 0);
+    }
+    for auto r <- rs[0 .. lenrs] {
+      Room2Tiles(r, ts);
+    }
+    l.lenrs = lenrs;
+  }
+  tp.waitComplete;
+  
+  Lev templ = void;
+  templ.lenrs = 0;
+  for auto l <- ls {
+    if (l.lenrs > templ.lenrs) templ = l;
+  }
+  PrintLev(&templ);
+}
+ 
+struct Tile {
+  int X, Y, T;
+}
+ 
+struct Room {
+  int X, Y, W, H, N;
+}
+ 
+struct CD {
+  int X, Y, L, vert;
+}
+ 
+struct Lev {
+  Tile[] ts;
+  Room[] rs;
+  int lenrs;
+  void init() {
+    (ts, rs) = (new Tile[] 2500, new Room[] 100);
+  }
+}
+ 
+int CheckColl(int x, y, w, h, Room* rs, int lenrs) {
+  for int i <- 0..lenrs {
+    int (rx, ry, rw, rh) = rs[i].(X, Y, W, H);
+    // try 1
+    /*bool RoomOkay;
+    if (rx + rw + 1 < x || rx > x+w+1) {
+      RoomOkay = true;
+    } else if (ry + rh + 1 < y || ry > y+h+1) {
+      RoomOkay = true;
+    }*/
+    // try 2
+    bool RoomOkay = (rx + rw + 1 < x || rx > x+w+1) || (ry + rh + 1 < y || ry > y+h+1);
+    if (!RoomOkay) return true;
+  }
+  return false;
+}
+ 
+int MakeRoom(Room* rs, int lenrs, size_t* gen) {
+  alias rand = GenRand(gen);
+  int x = rand % TileDim, y = rand % TileDim,
+      w = rand % RestWidMax + MinWid, h = rand % RestWidMax + MinWid;
+  if (x+w >= TileDim || y+h >= TileDim || x == 0 || y == 0) return lenrs;
+  
+  int nocrash = CheckColl(x, y, w, h, rs, lenrs);
+  if (nocrash == 0) {
+    ref r = rs[lenrs];
+    r.(X, Y, W, H) = (x, y, w, h);
+    r.N = lenrs;
+    return lenrs + 1;
+  }
+  return lenrs;
+}
+ 
+void Room2Tiles(Room r, Tile[] ts) {
+  int (x, y, w, h) = r.(X, Y, W, H); // make r.tuple or something
+  for int yi <- y..y+h+1 {
+    for int xi <- x..x+w+1 {
+      int num = yi * TileDim + xi;
+      ts[num].T = 1;
+    }
+  }
+}
+ 
+void PrintLev(Lev* lev) {
+  for int i <- ints && auto l <- lev.ts {
+    printf("%d", l.T);
+    if (i%(TileDim) == 49 && i != 0) printf("\n");
+  }
+}
