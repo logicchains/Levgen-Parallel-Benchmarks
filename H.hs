@@ -36,6 +36,8 @@ levDim = 50
 minWid = 2
 maxWid = 8
 
+numLevs = 1000
+
 genRoom :: Rand Xorshift Room
 genRoom = do
     r1 <- getRandom
@@ -108,11 +110,11 @@ biggestLev = L.maximumBy (comparing (V.length . lRooms))
 
 main :: IO ()
 main = do
-    (v:_) <- getArgs
+    (v:_) <- fmap (++ ["18"]) $ getArgs
     putStr "The random seed is: "
     putStrLn v
-    let levelCount = 100 --read v
-    gen <- newXorshift
+    let levelCount = numLevs
+    let gen = makeXorshift (read v)
     let (rand,_) = next gen
     levels <- genLevels [rand .. rand+levelCount]
     levels <- mapM readMVar levels
