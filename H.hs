@@ -39,17 +39,23 @@ maxWid = 8
 numLevs = 10
 numTries = 50000
 
+getRandomPos :: Rand Xorshift Int
+getRandomPos = do
+  r <- getRandom
+  let rPos = abs r
+  rPos `seq` return rPos
+
 genRoom :: Rand Xorshift Room
 genRoom = do
-    r1 <- getRandom
-    r2 <- getRandom
-    r3 <- getRandom
-    r4 <- getRandom
-    let x = rem (abs r1) levDim
-    let y = rem (abs r2) levDim
-    let w = rem (abs r3) maxWid + minWid
-    let h = rem (abs r4) maxWid + minWid
-    return Room {rx = x, ry = y, rw = w, rh = h}
+    r1 <- getRandomPos
+    r2 <- getRandomPos
+    r3 <- getRandomPos
+    r4 <- getRandomPos
+    let x = rem r1 levDim
+    let y = rem r2 levDim
+    let w = rem r3 maxWid + minWid
+    let h = rem r4 maxWid + minWid
+    return Room {rx = x, ry = y, rw = w, rh = h} 
 
 genGoodRooms :: Int -> Rand Xorshift (V.Vector Room)
 genGoodRooms n = aux n V.empty
@@ -73,8 +79,7 @@ genGoodRooms' n t = aux n t V.empty
 
 goodRoom :: V.Vector Room -> Room -> Bool
 goodRoom rooms room =
-    let good = not (checkBound room || checkColl room rooms) in
-    good
+    not (checkBound room || checkColl room rooms)
 
 checkBound :: Room -> Bool
 checkBound (Room x y w h) =
