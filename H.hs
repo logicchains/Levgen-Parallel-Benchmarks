@@ -45,10 +45,10 @@ genRoom = do
     r2 <- getRandom
     r3 <- getRandom
     r4 <- getRandom
-    let x = rem r1 levDim
-    let y = rem r2 levDim
-    let w = rem r3 maxWid + minWid
-    let h = rem r4 maxWid + minWid
+    let x = rem (abs r1) levDim
+    let y = rem (abs r2) levDim
+    let w = rem (abs r3) maxWid + minWid
+    let h = rem (abs r4) maxWid + minWid
     return Room {rx = x, ry = y, rw = w, rh = h}
 
 genGoodRooms :: Int -> Rand Xorshift (V.Vector Room)
