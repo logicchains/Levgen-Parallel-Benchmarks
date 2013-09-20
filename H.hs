@@ -13,15 +13,12 @@ import Control.DeepSeq (NFData(..), deepseq)
 type Pos = (Int,Int)
 
 data Tile = Wall | Space deriving (Show)
-
 instance NFData Tile
 
 data Room = Room
-    { roomX, roomY, roomW, roomH :: Int
+    { roomX, roomY, roomW, roomH :: {-# UNPACK #-} !Int
     } deriving (Show)
-
-instance NFData Room where
-    rnf (Room rx ry rw rh) = rx `seq` ry `seq` rw `seq` rh `seq` ()
+instance NFData Room
 
 data Lev = Lev
     { lRooms :: V.Vector Room
