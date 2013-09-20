@@ -6,8 +6,7 @@ import qualified Data.Vector as V
 import qualified Data.List as L
 import Random.Xorshift (Xorshift, makeXorshift)
 import Control.Monad.Random (Rand, evalRand, getRandom, next)
-import Control.Concurrent (forkIO)
-import Control.Concurrent.MVar
+import Control.Concurrent.Async (wait, async)
 import Control.DeepSeq (NFData(..), deepseq, ($!!))
 
 type Pos = (Int,Int)
@@ -100,12 +99,8 @@ genLevel = do
     toTile rooms n = if (V.any (toPos n `inRoom`) rooms) then Space else Wall
     toPos n = let (y, x) = quotRem n levDim in (x, y)
 
-genLevelMVar :: Int -> IO (MVar Lev)
-genLevelMVar seed =
-    let gen = makeXorshift seed in
-    do levelVar <- newEmptyMVar
-       _ <- forkIO (putMVar levelVar $!! evalRand genLevel gen)
-       return levelVar
+runGenLevel :: Int -> Lev
+runGenLevel seed = evalRand genLevel $ makeXorshift seed
 
 biggestLev :: [Lev] -> Lev
 biggestLev = L.maximumBy (comparing (V.length . lRooms))
@@ -118,5 +113,8 @@ main = do
     let levelCount = numLevs
     let gen = makeXorshift (read v :: Integer)
     let (rand,_) = next gen
-    levels <- mapM readMVar =<< mapM genLevelMVar [rand .. rand+levelCount]
+    levels <-
+      mapM wait =<<
+      mapM (async . (return $!!) . runGenLevel)
+      [rand .. rand+levelCount]
     putStr $ showTiles $ lTiles $ biggestLev levels
