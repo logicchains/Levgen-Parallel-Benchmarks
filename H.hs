@@ -8,7 +8,7 @@ import Random.Xorshift (Xorshift, makeXorshift)
 import Control.Monad.Random (Rand, evalRand, getRandom, next)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
-import Control.DeepSeq (NFData(..), deepseq)
+import Control.DeepSeq (NFData(..), deepseq, ($!!))
 
 type Pos = (Int,Int)
 
@@ -37,11 +37,11 @@ numLevs, numTries :: Int
 numLevs = 10
 numTries = 50000
 
+{-# INLINE getRandomPos #-}
 getRandomPos :: Rand Xorshift Int
 getRandomPos = do
   r <- getRandom
-  let rPos = abs r
-  rPos `seq` return rPos
+  return $! abs r
 
 genRoom :: Rand Xorshift Room
 genRoom = do
@@ -104,11 +104,8 @@ genLevelMVar :: Int -> IO (MVar Lev)
 genLevelMVar seed =
     let gen = makeXorshift seed in
     do levelVar <- newEmptyMVar
-       _ <- forkIO (let level = evalRand genLevel gen in level `deepseq` putMVar levelVar level)
+       _ <- forkIO (putMVar levelVar $!! evalRand genLevel gen)
        return levelVar
-
-genLevels :: [Int] -> IO [MVar Lev]
-genLevels = mapM genLevelMVar
 
 biggestLev :: [Lev] -> Lev
 biggestLev = L.maximumBy (comparing (V.length . lRooms))
@@ -121,5 +118,5 @@ main = do
     let levelCount = numLevs
     let gen = makeXorshift (read v :: Integer)
     let (rand,_) = next gen
-    levels <- mapM readMVar =<< genLevels [rand .. rand+levelCount]
+    levels <- mapM readMVar =<< mapM genLevelMVar [rand .. rand+levelCount]
     putStr $ showTiles $ lTiles $ biggestLev levels
