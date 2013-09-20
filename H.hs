@@ -58,17 +58,8 @@ genRoom = do
     let h = rem r4 maxWid + minWid
     return Room {roomX = x, roomY = y, roomW = w, roomH = h}
 
--- genGoodRooms :: Int -> Rand Xorshift (V.Vector Room)
--- genGoodRooms n = aux n V.empty
---     where aux 0 accum = return accum
---           aux count accum = do
---             room <- genRoom
---             if goodRoom accum room
---                 then aux (count-1) (V.cons room accum)
---                 else aux count accum
-
-genGoodRooms' :: Int -> Int -> Rand Xorshift (V.Vector Room)
-genGoodRooms' = aux V.empty
+genGoodRooms :: Int -> Int -> Rand Xorshift (V.Vector Room)
+genGoodRooms = aux V.empty
     where aux accum 0 _ = return accum
           aux accum _ 0 = return accum
           aux accum count t = do
@@ -76,7 +67,6 @@ genGoodRooms' = aux V.empty
             if goodRoom accum room
                 then aux (V.cons room accum) (count-1) (t-1)
                 else aux accum count (t-1)
-
 
 goodRoom :: V.Vector Room -> Room -> Bool
 goodRoom rooms room =
@@ -106,7 +96,7 @@ showTiles = unlines . chunksOf levDim . map toChar
 
 genLevel :: Rand Xorshift Lev
 genLevel = do
-    rooms <- genGoodRooms' 100 numTries
+    rooms <- genGoodRooms 100 numTries
     let tiles = map (toTile rooms) [1 .. levDim*levDim]
     return $ Lev{lRooms = rooms, lTiles = tiles}
   where
