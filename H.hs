@@ -1,27 +1,23 @@
+{-# OPTIONS -Wall -O2 #-}
 import Data.List.Split (chunksOf)
 import Data.Ord (comparing)
 import System.Environment
 import qualified Data.Vector as V
 import qualified Data.List as L
-import Random.Xorshift
-import Control.Monad
-import Control.Monad.Random
-import Control.Concurrent
-import Control.Concurrent.MVar
-import Control.DeepSeq
+import Random.Xorshift (Xorshift, makeXorshift)
+import Control.Monad.Random (Rand, evalRand, getRandom, next)
+import Control.Concurrent.Async (wait, async)
+import Control.DeepSeq (NFData(..), deepseq, ($!!))
 
 type Pos = (Int,Int)
 
 data Tile = Wall | Space deriving (Show)
-
 instance NFData Tile
 
 data Room = Room
-    { rx, ry, rw, rh :: Int
+    { roomX, roomY, roomW, roomH :: {-# UNPACK #-} !Int
     } deriving (Show)
-
-instance NFData Room where
-    rnf (Room rx ry rw rh) = rx `seq` ry `seq` rw `seq` rh `seq` ()
+instance NFData Room
 
 data Lev = Lev
     { lRooms :: V.Vector Room
@@ -29,21 +25,22 @@ data Lev = Lev
     }
 
 instance NFData Lev where
-    rnf (Lev lRooms lTiles) = lRooms `deepseq` lTiles `deepseq` ()
+    rnf (Lev rooms tiles) = rooms `deepseq` tiles `deepseq` ()
 
 levDim, minWid, maxWid :: Int
 levDim = 50
 minWid = 2
 maxWid = 8
 
+numLevs, numTries :: Int
 numLevs = 10
 numTries = 50000
 
+{-# INLINE getRandomPos #-}
 getRandomPos :: Rand Xorshift Int
 getRandomPos = do
   r <- getRandom
-  let rPos = abs r
-  rPos `seq` return rPos
+  return $! abs r
 
 genRoom :: Rand Xorshift Room
 genRoom = do
@@ -55,27 +52,17 @@ genRoom = do
     let y = rem r2 levDim
     let w = rem r3 maxWid + minWid
     let h = rem r4 maxWid + minWid
-    return Room {rx = x, ry = y, rw = w, rh = h} 
+    return Room {roomX = x, roomY = y, roomW = w, roomH = h}
 
-genGoodRooms :: Int -> Rand Xorshift (V.Vector Room)
-genGoodRooms n = aux n V.empty
-    where aux 0 accum = return accum
-          aux count accum = do
+genGoodRooms :: Int -> Int -> Rand Xorshift (V.Vector Room)
+genGoodRooms = aux V.empty
+    where aux accum 0 _ = return accum
+          aux accum _ 0 = return accum
+          aux accum count t = do
             room <- genRoom
             if goodRoom accum room
-                then aux (count-1) (V.cons room accum)
-                else aux count accum
-
-genGoodRooms' :: Int -> Int -> Rand Xorshift (V.Vector Room)
-genGoodRooms' n t = aux n t V.empty
-    where aux 0 _ accum = return accum
-          aux _ 0 accum = return accum
-          aux count t accum = do
-            room <- genRoom
-            if goodRoom accum room
-                then aux (count-1) (t-1) (V.cons room accum)
-                else aux count (t-1) accum
-
+                then aux (V.cons room accum) (count-1) (t-1)
+                else aux accum count (t-1)
 
 goodRoom :: V.Vector Room -> Room -> Bool
 goodRoom rooms room =
@@ -105,22 +92,15 @@ showTiles = unlines . chunksOf levDim . map toChar
 
 genLevel :: Rand Xorshift Lev
 genLevel = do
-    rooms <- genGoodRooms' 100 numTries
-    let tiles = map (toTile rooms) [1 .. levDim ^ 2]
+    rooms <- genGoodRooms 100 numTries
+    let tiles = map (toTile rooms) [1 .. levDim*levDim]
     return $ Lev{lRooms = rooms, lTiles = tiles}
   where
     toTile rooms n = if (V.any (toPos n `inRoom`) rooms) then Space else Wall
     toPos n = let (y, x) = quotRem n levDim in (x, y)
 
-genLevelMVar :: Int -> IO (MVar Lev)
-genLevelMVar seed =
-    let gen = makeXorshift seed in
-    do levelVar <- newEmptyMVar
-       forkIO (let level = evalRand genLevel gen in level `deepseq` putMVar levelVar level)
-       return levelVar
-
-genLevels :: [Int] -> IO [MVar Lev]
-genLevels = mapM genLevelMVar
+runGenLevel :: Int -> Lev
+runGenLevel seed = evalRand genLevel $ makeXorshift seed
 
 biggestLev :: [Lev] -> Lev
 biggestLev = L.maximumBy (comparing (V.length . lRooms))
@@ -131,8 +111,10 @@ main = do
     putStr "The random seed is: "
     putStrLn v
     let levelCount = numLevs
-    let gen = makeXorshift (read v)
+    let gen = makeXorshift (read v :: Integer)
     let (rand,_) = next gen
-    levels <- genLevels [rand .. rand+levelCount]
-    levels <- mapM readMVar levels
+    levels <-
+      mapM wait =<<
+      mapM (async . (return $!!) . runGenLevel)
+      [rand .. rand+levelCount]
     putStr $ showTiles $ lTiles $ biggestLev levels
